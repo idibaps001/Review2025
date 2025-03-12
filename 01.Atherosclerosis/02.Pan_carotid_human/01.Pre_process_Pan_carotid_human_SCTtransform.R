@@ -11,6 +11,7 @@ library(scRNAutils)
 set.seed(1)
 # PROCESS HUMAN CAROTID MATRICES USING SCTransform
 setwd("/Users/lucia/Documents/34.immunometabolism/data/Pan_carotid_human")
+
 #######################################################################
 # Read Sample 1: GSM4705589 RPE004 (Caucasian, Male, 83, Symptomatic) #
 #######################################################################
@@ -19,6 +20,7 @@ rpe004_matrix = fread("GSE155512_RAW/GSM4705589_RPE004_matrix.txt.gz", sep="\t",
 rownames(rpe004_matrix) = rpe004_matrix$gene
 head(rownames(rpe004_matrix))
 dim(rpe004_matrix)#[1] 15796  2615
+
 # Make sparse matrix and remove "gene" column
 rpe004_sparse_mtx = as.sparse(rpe004_matrix)
 rpe004_sparse_mtx = rpe004_sparse_mtx[, -1]
@@ -34,33 +36,20 @@ rpe004_seurat_sct = CreateSeuratObject(counts = rpe004_sparse_mtx,
                                        min.cells = 10, 
                                        min.features = 200)
 
-
-
 ###################################
 # STEP 2 before/after removing doublets
 
 Seurat_SCT_process = function(seurat_obj, seurat_filter=FALSE, 
                               sample_id, study_name, artery, disease_status){
-  # Define "stim" group to separate datasets during visualization after integration. 
-  # It might be helpful to plot by sample ID, study. Vascular bed and sample disease status will be added once we create the main reference since it's a bit trickier to set
   seurat_obj$sample = sample_id
   seurat_obj$study = study_name
   # Check for mt, hb percentage and other quality metrics 
   seurat_obj[["percent.mt"]] = PercentageFeatureSet(seurat_obj, pattern = "^MT-")
-  # Define hemoglobin genes
-  #hb_index = grep(rownames(seurat_obj), pattern = "^HB[AB]")
-  #hb_genes = rownames(seurat_obj)[hb_index]
-  #seurat_obj[["percent.hb"]] = PercentageFeatureSet(seurat_obj, features = hb_genes)
   
-  # Filter low quality cells (start with parameters used in the paper)
   # NOTE: Skip this step during the first processing round to be used for doublet detection
   if (seurat_filter) {
       seurat_obj =  subset(seurat_obj, subset= nFeature_RNA > 200 & nCount_RNA > 300)
   }
-  
-  # Calculate cell cycle scores
-  #seurat_obj = CellCycleScoring(seurat_obj, s.features = s.genes, 
-  #                              g2m.features = g2m.genes)
   
   # Normalize data, find variable genes, scale data and regress out percent.mt variance
   # SCT enables extraction of meaningful insights from more PCs so we'll set dims=1:30
@@ -74,12 +63,10 @@ Seurat_SCT_process = function(seurat_obj, seurat_filter=FALSE,
     return(seurat_obj)
 }
 
-
 # SCT normalize
 rpe004_seurat_sct = Seurat_SCT_process(rpe004_seurat_sct, seurat_filter = FALSE,
                                        sample_id = "pan_rpe004", 
                                        study_name = "pan_et_al")
-
                                        
 # Clean counts matrix (without doublets) from ambient RNA using the decontX wrapper
    decontX_remove = function(seurat_obj) {
@@ -91,19 +78,13 @@ rpe004_seurat_sct = Seurat_SCT_process(rpe004_seurat_sct, seurat_filter = FALSE,
                                        
     rpe004_seurat_sct =  decontX_remove(rpe004_seurat_sct)
     head(rpe004_seurat_sct@assays$RNA$counts)
-                                       
-
-                                       
-                                       
-                                       
-
+                                                                            
 # Finding the right resolution is quite important for doublet detection and removal
 rpe004_seurat_sct =  FindClusters(rpe004_seurat_sct, resolution = 0.5)   
 
 # Visualize clusters
 p1_before_QC = DimPlot(rpe004_seurat_sct, reduction = "umap", label = TRUE) +
   ggtitle("Before removing doublets")
-
 
 ##################################
 # STEP 3
@@ -134,8 +115,6 @@ ncol(rpe004_seurat_sct)
 p1_after_QC = DimPlot(rpe004_seurat_sct, reduction = "umap", label = TRUE) +
   ggtitle("After removing doublets + decontX")
 
-
-
 FeaturePlot(rpe004_seurat_sct, features = c("MYH11", "CNN1", "TNFRSF11B", "ACTA2", 
                                             "CRTAC1", "LUM"), order = TRUE,  pt.size = 0.1)
 FeaturePlot(rpe004_seurat_sct, features = c("CD68", "CD14", "CD163", "APOE", 
@@ -144,9 +123,6 @@ FeaturePlot(rpe004_seurat_sct, features = c("MYH11", "CNN1", "FHL5", "FOXC1"), o
 # Save RDS object
 # NUmber of cells after processing: 2587
 saveRDS(rpe004_seurat_sct, "pan_rpe004_processed_SCTtransformed.rds")
-
-
-
 
 #########################################################################
 # Read Sample 2: GSM4705590 RPE005 (Caucasian, Male, 67, Asymptomatic)  #
@@ -184,15 +160,12 @@ rpe005_seurat_sct = Seurat_SCT_process(rpe005_seurat_sct, seurat_filter = FALSE,
 rpe005_seurat_sct =  decontX_remove(rpe005_seurat_sct)
 head(rpe005_seurat_sct@assays$RNA$counts)
 
-
-
 # Finding the right resolution is quite important for doublet detection and removal
 rpe005_seurat_sct =  FindClusters(rpe005_seurat_sct, resolution = 0.5)   
 
 # Visualize clusters
 p1_before_QC = DimPlot(rpe005_seurat_sct, reduction = "umap", label = TRUE) +
   ggtitle("Before removing doublets")
-
 
 ##################################
 # STEP 3
@@ -219,11 +192,8 @@ rpe005_seurat_sct = Seurat_SCT_process(rpe005_seurat_sct, seurat_filter = TRUE,
                                        sample_id = "pan_rpe005", 
                                        study_name = "pan_et_al") # 16670 genes *   3469 cells
 
-
-
 p1_after_QC = DimPlot(rpe005_seurat_sct, reduction = "umap", label = TRUE) +
   ggtitle("After removing doublets + decontX")
-
 
 FeaturePlot(rpe005_seurat_sct, features = c("MYH11", "CNN1", "TNFRSF11B", "ACTA2", 
                                             "CRTAC1", "LUM"), order = TRUE,  pt.size = 0.1)
@@ -237,7 +207,6 @@ saveRDS(rpe005_seurat_sct, "pan_rpe005_processed_SCTtransformed.rds")
 ##########################################################################
 # Read Sample 3: GSM4705591 RPE006 (Caucasian, Female, 76, Asymptomatic) #
 ##########################################################################
-
 # Load Matrix
 rpe006_matrix = fread("GSE155512_RAW/GSM4705591_RPE006_matrix.txt.gz", sep="\t", header = TRUE)
 
@@ -252,7 +221,6 @@ rpe006_sparse_mtx = rpe006_sparse_mtx[, -1]
 # 15687 genes x 2767 cells
 dim(rpe006_sparse_mtx)
 
-
 ##################################
 # STEP 1: Pre-processing (Create Seurat obj containing doublets)
 # Dims of seurat object: 15445 genes x 2767 cells
@@ -260,7 +228,6 @@ rpe006_seurat_sct = CreateSeuratObject(counts = rpe006_sparse_mtx,
                                        project = "pan_rpe006", 
                                        min.cells = 10, 
                                        min.features = 200)
-
 
 ###################################
 # STEP 2 before/after removing doublets
@@ -273,8 +240,6 @@ rpe006_seurat_sct = Seurat_SCT_process(rpe006_seurat_sct, seurat_filter = FALSE,
 # Clean counts matrix (without doublets) from ambient RNA using the decontX wrapper
 rpe006_seurat_sct =  decontX_remove(rpe006_seurat_sct)
 head(rpe006_seurat_sct@assays$RNA$counts)
-
-
 
 # Finding the right resolution is quite important for doublet detection and removal
 rpe006_seurat_sct =  FindClusters(rpe006_seurat_sct, resolution = 0.2)   
@@ -299,6 +264,7 @@ rpe006_seurat_sct <- subset(rpe006_seurat_sct, subset = scDblFinder.class == "si
 dim(rpe006_seurat_sct)#2727
 
 # New dims after removing doublets: 15445 genes x 2727 cells
+
 ###################################
 # STEP 4 after removing doublets
 
@@ -312,8 +278,6 @@ ncol(rpe006_seurat_sct)
 p1_after_QC = DimPlot(rpe006_seurat_sct, reduction = "umap", label = TRUE) +
   ggtitle("After removing doublets + decontX")
 
-
-
 FeaturePlot(rpe006_seurat_sct, features = c("MYH11", "CNN1", "TNFRSF11B", "ACTA2", 
                                             "CRTAC1", "LUM"), order = TRUE,  pt.size = 0.1)
 FeaturePlot(rpe006_seurat_sct, features = c("CD68", "CD14", "CD163", "APOE", 
@@ -322,8 +286,6 @@ FeaturePlot(rpe006_seurat_sct, features = c("MYH11", "CNN1", "FHL5", "FOXC1"), o
 # Save RDS object
 # NUmber of cells after processing: 2727
 saveRDS(rpe006_seurat_sct, "pan_rpe006_processed_SCTtransformed.rds")
-
-
 
 ######################################################################################################
 #                                                                                                    #
@@ -397,7 +359,6 @@ rpe004_seurat_sct.monomac@meta.data <- metadata2
 Idents(rpe004_seurat_sct.monomac) = "SingleR"
 DimPlot(rpe004_seurat_sct.monomac)
 
-
 #11118 genes * 213 cells
 saveRDS(rpe004_seurat_sct.monomac, "pan_rpe004_processed_SCTtransformed_monomac.rds")
 
@@ -439,7 +400,6 @@ sce <- LayerData(rpe005_seurat_sct, assay = "RNA", layer = "counts")
 predictions <- SingleR(test=sce, assay.type.test=1, 
                        ref=ref.data, labels=ref.data$label.main)
 
-
 table(predictions$labels)
 plotScoreHeatmap(predictions)#picture size: 840*600
 rpe005_seurat_sct$SingleR <- predictions$labels
@@ -475,11 +435,8 @@ rpe005_seurat_sct.monomac@meta.data <- metadata2
 Idents(rpe005_seurat_sct.monomac) = "SingleR"
 DimPlot(rpe005_seurat_sct.monomac)
 
-
 #14160 genes * 1100 cells
 saveRDS(rpe005_seurat_sct.monomac, "pan_rpe005_processed_SCTtransformed_monomac.rds")
-
-
 
 ######################################################################################################
 #                                                                                                    #
@@ -517,7 +474,6 @@ sce <- LayerData(rpe006_seurat_sct, assay = "RNA", layer = "counts")
 predictions <- SingleR(test=sce, assay.type.test=1, 
                        ref=ref.data, labels=ref.data$label.main)
 
-
 table(predictions$labels)
 plotScoreHeatmap(predictions)#picture size: 840*600
 rpe006_seurat_sct$SingleR <- predictions$labels
@@ -553,33 +509,5 @@ rpe006_seurat_sct.monomac@meta.data <- metadata2
 Idents(rpe006_seurat_sct.monomac) = "SingleR"
 DimPlot(rpe006_seurat_sct.monomac)
 
-
 #12727 genes * 726 cells
 saveRDS(rpe006_seurat_sct.monomac, "pan_rpe006_processed_SCTtransformed_monomac.rds")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
