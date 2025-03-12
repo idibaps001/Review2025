@@ -1,0 +1,256 @@
+#Review on in immunometabolism in macrophages - cancer/atherosclerosis
+#https://zenodo.org/records/11222158
+#Note this atlas does not include raw count data as these can be download from the original sources, 
+#but does include log-normalized count data, SCTransformed data and integrated data via RPCA.
+
+library(Seurat)
+library(SeuratObject)
+library(tidyverse)
+setwd("/Users/lucia/Documents/34.immunometabolism")
+mac.atlas.zenodo <- readRDS("mac.atlas.zenodo.200524.rds")
+
+mac.atlas.zenodo.metadata <- mac.atlas.zenodo@meta.data
+View(mac.atlas.zenodo.metadata)
+rownames(mac.atlas.zenodo.metadata) <- mac.atlas.zenodo.metadata$cellid
+mac.atlas.zenodo.metadata$orig.ident <- mac.atlas.zenodo.metadata$cellid
+mac.atlas.zenodo@meta.data <- mac.atlas.zenodo.metadata
+# Assuming 'seurat_obj' is your Seurat object and 'umap_1' and 'umap_2' are in the metadata
+UMAP_1 = mac.atlas.zenodo@meta.data$UMAP_1
+UMAP_2 = mac.atlas.zenodo@meta.data$UMAP_2
+mac.atlas.zenodo.umap <- data.frame(UMAP_1 = UMAP_1, UMAP_2 = UMAP_2)
+rownames(mac.atlas.zenodo.umap) <- rownames(mac.atlas.zenodo.metadata)
+mac.atlas.zenodo.umap <- as.matrix(mac.atlas.zenodo.umap)
+# Create a new 'DimReduc' object (UMAP)
+umap_reduction <- CreateDimReducObject(
+  embeddings = mac.atlas.zenodo.umap,
+  key = "UMAP_",
+  assay = "RNA"  # Or specify the assay you are using, if it's different
+)
+# Add the UMAP reduction to the Seurat object
+mac.atlas.zenodo[["umap"]] <- umap_reduction
+UMAPPlot(mac.atlas.zenodo,group.by = "short.label",label = TRUE)
+
+#提取泛癌分析综述文章的UMAP图颜色
+library(png)
+library(cluster)
+library(ggplot2)
+
+img <- readPNG("plot1.png")
+# 获取图片的宽度、高度和颜色通道数（通常是3个通道：R, G, B）
+dim(img)
+# 将图片数据转换成一个数据框，其中每一行是一个像素的 RGB 值
+# img 是一个三维数组，大小是 (宽度, 高度, 3)
+img_data <- data.frame(
+  R = as.vector(img[,,1]),
+  G = as.vector(img[,,2]),
+  B = as.vector(img[,,3])
+)
+# 查看数据框的一部分
+head(img_data)
+
+set.seed(123)  # 设置种子确保结果可重复
+kmeans_result <- kmeans(img_data, centers = 50)  # 提取 30 种颜色
+
+# 获取聚类结果的颜色（RGB 值）
+cluster_colors <- kmeans_result$centers
+# 显示提取的颜色（RGB 值）
+print("主要颜色（RGB 值）：")
+print(cluster_colors)
+# 获取每个像素的颜色类别
+img_data$cluster <- factor(kmeans_result$cluster)
+
+# 计算每个簇的颜色出现频率
+color_counts <- img_data %>%
+  group_by(cluster) %>%
+  summarise(count = n())
+
+# 获取聚类中心的颜色（RGB）
+cluster_colors_rgb <- rgb(cluster_colors[,1], cluster_colors[,2], cluster_colors[,3], maxColorValue = 1)
+
+# 添加颜色列到 color_counts 数据框
+color_counts$color <- cluster_colors_rgb
+
+# 可视化每个颜色的出现频率
+ggplot(color_counts[1:25,], aes(x = cluster, y = 1, fill = color)) +
+  geom_bar(stat = "identity") +
+  scale_fill_identity() +  # 使用 RGB 颜色值填充条形
+  theme_void() +
+  ggtitle("Top 5 Colors in Image")  +  # 可视化图像中的前 5 种颜色
+  geom_text(aes(label = color), 
+            position = position_stack(vjust = 0.5),  # 设置标签位置
+            color = "black",  # 标签字体颜色
+            size = 5,
+            angle = 90
+            )  # 设置标签字体大小
+
+
+ggplot(color_counts[26:50,], aes(x = cluster, y = 1, fill = color)) +
+  geom_bar(stat = "identity") +
+  scale_fill_identity() +  # 使用 RGB 颜色值填充条形
+  theme_void() +
+  ggtitle("Top 5 Colors in Image")  +  # 可视化图像中的前 5 种颜色
+  geom_text(aes(label = color), 
+            position = position_stack(vjust = 0.5),  # 设置标签位置
+            color = "black",  # 标签字体颜色
+            size = 5,
+            angle = 90
+  )  # 设置标签字体大小
+
+#查看每个群对应的颜色
+table( mac.atlas.zenodo$short.label )
+#  0_AlvMac         1_MetM2Mac        2_C3Mac      3_ICIMac1            4_ICIMac2 
+#  #50609F          #BF493E           #769765      #E7E291              #4E6980
+#  5_StressMac      6_SPP1AREGMac     7_IFNMac     8_IFNGMac            9_AngioMac 
+#  #B16743          #64A5D0           #7B334C      #7BAB77              #C1909A
+#  10_InflamMac     11_MetalloMac     12_MBMMac    13_CalciumMac        14_ProliMac 
+#  #854E30          #7B7788           #AD4C45      #C18D66              #6C6497
+#  15_LYZMac        16_ECMHomeoMac    17_IFNMac3   18_ECMMac            19_ClassMono 
+#  #CEA876          #35224D           #C1CFB1      #533068               #992F5F
+#  20_TDoub         21_HemeMac        22_IFNMac4          23_NA 
+#  #D7C182          #672456           #BA963F             #FFFFFF
+
+custom_colors <- c(
+  "#50609F", "#BF493E", "#769765", "#E7E291", "#4E6980", 
+  "#B16743","#64A5D0", "#7B334C","#7BAB77", "#C1909A",
+  "#854E30", "#7B7788","#AD4C45","#C18D66", "#6C6497",
+  "#CEA876", "#35224D", "#C1CFB1","#533068", "#992F5F",
+  "#D7C182", "#672456", "#BA963F", "#FFFFFF"
+  )
+#"#50609F""#6A7BA6""#5C6B8E""#7A8AAB""#4E5A79""#5B6D8A"
+UMAPPlot(mac.atlas.zenodo,group.by = "short.label",label = TRUE,cols = custom_colors, raster = FALSE)
+
+
+library(ape)
+library(ggnewscale)
+library(ggtree)
+library(ggrepel)
+############################
+#FUNCTIONS 
+############################
+adjust.label = function(cluster, x, y){
+  label.coords$x.mean[label.coords$short.label == cluster] =
+    label.coords$x.mean[label.coords$short.label == cluster] + x
+  label.coords$y.mean[label.coords$short.label == cluster] = 
+    label.coords$y.mean[label.coords$short.label == cluster] + y
+  label.coords
+}
+############################
+#CLUSTER UMAP 
+############################
+set.seed(1)
+mac.atlas.zenodo.metadata = mac.atlas.zenodo.metadata[order(mac.atlas.zenodo.metadata$short.label), ]
+#randomize order for better cluster visualization
+mac.atlas.zenodo.metadata = mac.atlas.zenodo.metadata[sample(1:nrow(mac.atlas.zenodo.metadata), nrow(mac.atlas.zenodo.metadata)), ]
+
+mac.atlas.zenodo.metadata$cluster = as.factor(mac.atlas.zenodo.metadata$cluster)
+
+mac.atlas.zenodo.metadata = mac.atlas.zenodo.metadata %>%
+  filter(cluster != 23)
+
+
+############################
+#GENERATE LABEL COORDS 
+############################
+
+label.coords = mac.atlas.zenodo.metadata %>%
+  group_by(short.label) %>%
+  summarize(
+    x.mean = mean(UMAP_1),
+    y.mean = mean(UMAP_2)
+  )
+
+label.coords$lab.text.color = "dark"
+label.coords$lab.text.color[
+  label.coords$short.label %in% c(
+    '16_ECMHomeoMac',
+    '18_ECMMac',
+    '4_ICIMac2',
+    '0_AlvMac',
+    '7_IFNMac',
+    '21_HemeMac'
+  )
+] = 'light'
+
+#adjustments to coords
+label.coords = adjust.label('0_AlvMac', -1, 0)
+label.coords = adjust.label('1_MetM2Mac', 0.3, -2)
+label.coords = adjust.label('4_ICIMac2', -2, 0)
+label.coords = adjust.label('18_ECMMac', 0, 0.5)
+label.coords = adjust.label('17_IFNMac3', 0, 1)
+label.coords = adjust.label('16_ECMHomeoMac', 2, 1)
+label.coords = adjust.label('3_ICIMac1', 1, 0)
+label.coords = adjust.label('5_StressMac', 1, -1)
+label.coords = adjust.label('12_MBMMac', -0.5, 1)
+label.coords = adjust.label('13_CalciumMac', -1, 0)
+label.coords = adjust.label('11_MetalloMac', 0, 1)
+label.coords = adjust.label('6_SPP1AREGMac', 1.3, -0.8)
+label.coords = adjust.label('2_C3Mac', 0, -0.5)
+label.coords = adjust.label('10_InflamMac', 1, -1)
+label.coords = adjust.label('20_TDoub', 0, 0.6)
+label.coords = adjust.label('15_LYZMac', 0, 0.3)
+label.coords = adjust.label('7_IFNMac', 0, 2)
+label.coords = adjust.label('21_HemeMac', 3.5, -1)
+
+# 加载 ggsci 包
+library(ggsci)
+
+clus.umap.raw = ggplot(mac.atlas.zenodo.metadata, aes(x = UMAP_1, y = UMAP_2, color = short.label)) +
+  geom_point() +
+  #scale_color_igv() +
+  scale_color_manual( values = custom_colors    ) +
+  new_scale_color() +
+  geom_label(
+    inherit.aes = F,
+    data = label.coords,
+    aes(
+      label = short.label,
+      x = x.mean,
+      y = y.mean,
+      fill = short.label,
+      color = lab.text.color
+    ),
+    size = 8,
+    label.size = 1.2
+  ) +
+  scale_color_manual(values = c('#000000', '#ffffff')) +
+  #scale_fill_igv() +
+  scale_fill_manual( values = custom_colors    ) +
+  theme_classic() +
+  xlab('UMAP1') +
+  ylab('UMAP2') +
+  theme(
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    legend.position = 'none',
+    axis.title = element_text(size = 18)
+  ) 
+#手动保存为1400*1400的图片
+
+###################################################################
+#单独处理每一个数据集，分别对每一个数据集进行SCTtransform, 过滤策略也与与pan-cancer review保持一致
+DefaultAssay(mac.atlas.zenodo) <- "SCT"
+VlnPlot(mac.atlas.zenodo,features = c("ZEB1","ZEB2","CXCR2","CX3CR1","CD68","CD14","ADGRE1","HLA-DRA","GAPDH","SNAI1","SNAI2","TWIST1","TWIST2","FOXC2"),group.by = "short.label",raster=FALSE, stack = TRUE, sort = FALSE, flip = TRUE)+ theme(legend.position = "none")+ggtitle("") + theme(plot.margin = unit(c(0.1,0.1,0.1,1), "inches"))
+DotPlot(mac.atlas.zenodo, idents = levels(mac.atlas.zenodo$short.label)[1:23]   ,  features = c("ZEB1","ZEB2","CXCR2","CX3CR1","CD68","CD14","ADGRE1","HLA-DRA","GAPDH","SNAI1","SNAI2","TWIST1","TWIST2","FOXC2"),group.by = "short.label" )
+
+#############把细胞分类为16_ECMHomeoMac群和Others  11-03-2025
+mac.atlas.zenodo@meta.data$celltype2 <- "Others"
+
+length(which(mac.atlas.zenodo@meta.data$short.label == "16_ECMHomeoMac"    ))#10011
+table( mac.atlas.zenodo@meta.data$short.label   )#10011
+
+mac.atlas.zenodo@meta.data$celltype2[which(   mac.atlas.zenodo@meta.data$short.label == "16_ECMHomeoMac"  )] <- "16_ECMHomeoMac" 
+table(mac.atlas.zenodo@meta.data$celltype2)
+#16_ECMHomeoMac         Others 
+#10011         353304 
+table(mac.atlas.zenodo@meta.data$celltype2, mac.atlas.zenodo@meta.data$tissue)
+#                Blood Effusion LymphNode Normal  Tumor
+#16_ECMHomeoMac      0       51       184    429   9347
+#Others            252     2736      6006  74553 269757
+
+
+#仅仅包含Tumor,比较"16_ECMHomeoMac" 和"Others"
+Idents(mac.atlas.zenodo) <- "tissue"
+#VlnPlot(mac.atlas.zenodo,features = c("FABP5","CD36","CD63","CD68","PLIN2","LIPA","APOE","IL1B","HSPA5","SIRPA","LPL"),group.by = "short.label",raster=FALSE, stack = TRUE, sort = FALSE, flip = TRUE)+ theme(legend.position = "none")+ggtitle("") + theme(plot.margin = unit(c(0.1,0.1,0.1,1), "inches"))
+p = VlnPlot(mac.atlas.zenodo, idents = "Tumor" ,features = c("FABP5","CD36","CD68","PLIN2","LIPA","APOE","LPL","LAMP1","TREM2","IL1B","IL10","LGALS1", "LGALS3", "CD274", "SIRPA", "HLA-DPA1", "HLA-DRB1" ),group.by = "celltype2",raster=FALSE, stack = TRUE, sort = FALSE, flip = TRUE)+ theme(legend.position = "none") + ggtitle("Pan-cancers") + theme(plot.margin = unit(c(0.1,0.1,0.1,1), "inches"))
+
+ggsave(p,filename = "plots/Lipid_markers_of_16_ECMHomeoMac_in_Tumor.jpeg",height = 10,width = 4) 
