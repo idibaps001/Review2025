@@ -72,7 +72,21 @@ table(Integration_atherosclerotic@meta.data$celltype2, Integration_atherosclerot
 #Others                                 3062                                     8491                                   989                               1816
 
 Idents(Integration_atherosclerotic ) <- "Tissue"
-p=VlnPlot(Integration_atherosclerotic ,idents = "carotid artery atherosclerotic core (AC)" ,   features = c("FABP5","CD36","CD68","PLIN2","LIPA","APOE","LPL","LAMP1","TREM2","IL1B","IL10","LGALS1", "LGALS3", "CD274", "SIRPA", "HLA-DPA1", "HLA-DRB1" ),group.by = "celltype2",raster=FALSE, stack = TRUE, sort = FALSE, flip = TRUE)+ theme(legend.position = "none") + ggtitle("Atherosclerotic core") + theme(plot.margin = unit(c(0.1,0.1,0.1,1), "inches"))
+p=VlnPlot(Integration_atherosclerotic ,idents = "carotid artery atherosclerotic core (AC)" ,   features = c("FABP5","CD36","CD68","PLIN2","LIPA","APOE","LPL","LAMP1","TREM2","ABCA1","MARCO" ),group.by = "celltype2", cols = c("#AD867E","#a47053","#7b5965","#95594c","#533068","#66597b","#50609f","#4e6980","#678171","#7bab77","#979c70"),raster=FALSE, stack = TRUE, sort = FALSE, flip = TRUE)+ 
+  theme(legend.position = "none") + 
+  ggtitle("Atherosclerotic core") + 
+  theme(plot.margin = unit(c(0.1,0.1,0.1,1), "inches"))+
+  scale_x_discrete(labels = c("16_ECMHomeoMac" = "Cluster16", "Others" = "Others"))
 
 setwd("/Users/lucia/Documents/34.immunometabolism")
-ggsave(p,filename = "plots/Lipid_markers_of_16_ECMHomeoMac_in_Carotid_Artery_AC.jpeg",height = 10,width = 4) 
+ggsave(p,filename = "plots/Lipid_markers_of_16_ECMHomeoMac_in_Carotid_Artery_AC.jpeg",height = 6,width = 4) 
+
+
+p=VlnPlot(Integration_atherosclerotic ,idents = "carotid artery atherosclerotic core (AC)" ,   features = c("LGALS1", "LGALS3", "SIRPA", "MMP9","MRC1", "HLA-DPA1", "HLA-DRB1" ), cols = c("#95594c","#533068","#66597b","#50609f","#4e6980","#678171","#7bab77"), group.by = "celltype2",raster=FALSE, stack = TRUE, sort = FALSE, flip = TRUE)+ 
+  theme(legend.position = "none") + 
+  ggtitle("Atherosclerotic core") + 
+  theme(plot.margin = unit(c(0.1,0.1,0.1,1), "inches"))+
+  scale_x_discrete(labels = c("16_ECMHomeoMac" = "Cluster16", "Others" = "Others"))
+
+setwd("/Users/lucia/Documents/34.immunometabolism")
+ggsave(p,filename = "plots/Immuno_markers_of_16_ECMHomeoMac_in_Carotid_Artery_AC.jpeg",height = 4,width = 4) 
