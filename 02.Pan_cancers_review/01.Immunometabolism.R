@@ -251,6 +251,20 @@ table(mac.atlas.zenodo@meta.data$celltype2, mac.atlas.zenodo@meta.data$tissue)
 #仅仅包含Tumor,比较"16_ECMHomeoMac" 和"Others"
 Idents(mac.atlas.zenodo) <- "tissue"
 #VlnPlot(mac.atlas.zenodo,features = c("FABP5","CD36","CD63","CD68","PLIN2","LIPA","APOE","IL1B","HSPA5","SIRPA","LPL"),group.by = "short.label",raster=FALSE, stack = TRUE, sort = FALSE, flip = TRUE)+ theme(legend.position = "none")+ggtitle("") + theme(plot.margin = unit(c(0.1,0.1,0.1,1), "inches"))
-p = VlnPlot(mac.atlas.zenodo, idents = "Tumor" ,features = c("FABP5","CD36","CD68","PLIN2","LIPA","APOE","LPL","LAMP1","TREM2","IL1B","IL10","LGALS1", "LGALS3", "CD274", "SIRPA", "HLA-DPA1", "HLA-DRB1" ),group.by = "celltype2",raster=FALSE, stack = TRUE, sort = FALSE, flip = TRUE)+ theme(legend.position = "none") + ggtitle("Pan-cancers") + theme(plot.margin = unit(c(0.1,0.1,0.1,1), "inches"))
+p = VlnPlot(mac.atlas.zenodo, idents = "Tumor" , features = c("FABP5","CD36","CD68","PLIN2","LIPA","APOE","LPL","LAMP1","TREM2","ABCA1","MARCO" ),group.by = "celltype2", cols = c("#AD867E","#a47053","#7b5965","#95594c","#533068","#66597b","#50609f","#4e6980","#678171","#7bab77","#979c70") ,raster=FALSE, stack = TRUE, sort = FALSE, flip = TRUE)+ 
+  theme(legend.position = "none") + 
+  ggtitle("Pan-cancer") + 
+  theme(plot.margin = unit(c(0.1,0.1,0.1,1), "inches")) +
+  scale_x_discrete(labels = c("16_ECMHomeoMac" = "Cluster16", "Others" = "Others"))
+  
+ggsave(p,filename = "plots/Lipid_markers_of_16_ECMHomeoMac_in_Tumor.jpeg",height = 6,width = 4) 
 
-ggsave(p,filename = "plots/Lipid_markers_of_16_ECMHomeoMac_in_Tumor.jpeg",height = 10,width = 4) 
+
+p = VlnPlot(mac.atlas.zenodo, idents = "Tumor" ,features = c("LGALS1", "LGALS3", "SIRPA", "MMP9","MRC1", "HLA-DPA1", "HLA-DRB1"), cols = c("#95594c","#533068","#66597b","#50609f","#4e6980","#678171","#7bab77"),group.by = "celltype2",raster=FALSE, stack = TRUE, sort = FALSE, flip = TRUE)+ 
+  theme(legend.position = "none") + 
+  ggtitle("Pan-cancer") + 
+  theme(plot.margin = unit(c(0.1,0.1,0.1,1), "inches"))+
+  scale_x_discrete(labels = c("16_ECMHomeoMac" = "Cluster16", "Others" = "Others"))
+
+
+ggsave(p,filename = "plots/Immumo_markers_of_16_ECMHomeoMac_in_Tumor.jpeg",height = 4,width = 4) 
