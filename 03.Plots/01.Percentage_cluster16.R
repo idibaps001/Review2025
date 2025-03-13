@@ -36,4 +36,4 @@ p = ggplot(df, aes(x = Tissue, y = Percentage, fill = Tissue)) +
   #theme(plot.margin = unit(c(0.1,0.1,0.1,1.5), "inches")) +
   geom_text(aes(label = paste0(Percentage, "%")), vjust = -0.5, size = 5)
 
-ggsave(p,file = "plots/Percentage_BarPlot.jpeg",height = 8,width = 8)
+  ggsave(p,file = "plots/Percentage_BarPlot.jpeg",height = 8,width = 8)
