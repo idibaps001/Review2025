@@ -42,10 +42,6 @@ Seurat_SCT_process = function(seurat_obj, seurat_filter=FALSE,
     seurat_obj =  subset(seurat_obj, subset= nFeature_RNA > 200 & nCount_RNA > 300)
   }
   
-  # Calculate cell cycle scores
-  #seurat_obj = CellCycleScoring(seurat_obj, s.features = s.genes, 
-  #                              g2m.features = g2m.genes)
-  
   # Normalize data, find variable genes, scale data and regress out percent.mt variance
   # SCT enables extraction of meaningful insights from more PCs so we'll set dims=1:30
   # SCTransform Arg internally uses glmGamPoi
@@ -195,5 +191,3 @@ DimPlot(ac_p1_seurat_sct.monomac)
 
 #15057 genes * 4803 cells
 saveRDS(ac_p1_seurat_sct.monomac, "alsaigh_ac_p1_processed_SCTtransformed_monomac.rds")
-
-
