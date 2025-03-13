@@ -266,5 +266,4 @@ p = VlnPlot(mac.atlas.zenodo, idents = "Tumor" ,features = c("LGALS1", "LGALS3",
   theme(plot.margin = unit(c(0.1,0.1,0.1,1), "inches"))+
   scale_x_discrete(labels = c("16_ECMHomeoMac" = "Cluster16", "Others" = "Others"))
 
-
 ggsave(p,filename = "plots/Immumo_markers_of_16_ECMHomeoMac_in_Tumor.jpeg",height = 4,width = 4) 
