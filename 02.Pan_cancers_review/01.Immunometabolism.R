@@ -30,73 +30,72 @@ umap_reduction <- CreateDimReducObject(
 mac.atlas.zenodo[["umap"]] <- umap_reduction
 UMAPPlot(mac.atlas.zenodo,group.by = "short.label",label = TRUE)
 
-#提取泛癌分析综述文章的UMAP图颜色
+#Extract the colors of the UMAP plot from the pan-cancer analysis review article
 library(png)
 library(cluster)
 library(ggplot2)
 
 img <- readPNG("plot1.png")
-# 获取图片的宽度、高度和颜色通道数（通常是3个通道：R, G, B）
+# Obtain the width, height, and number of color channels of the image (typically 3 channels: R, G, B)
 dim(img)
-# 将图片数据转换成一个数据框，其中每一行是一个像素的 RGB 值
-# img 是一个三维数组，大小是 (宽度, 高度, 3)
+# Convert image data into a DataFrame, where each row represents the RGB values of a pixel
+# img is a three-dimensional array with dimensions (width, height, 3)
 img_data <- data.frame(
   R = as.vector(img[,,1]),
   G = as.vector(img[,,2]),
   B = as.vector(img[,,3])
 )
-# 查看数据框的一部分
+
 head(img_data)
 
-set.seed(123)  # 设置种子确保结果可重复
-kmeans_result <- kmeans(img_data, centers = 50)  # 提取 30 种颜色
+set.seed(123)  
+kmeans_result <- kmeans(img_data, centers = 50)  # Extract 30 colors
 
-# 获取聚类结果的颜色（RGB 值）
+# Obtain the colors (RGB values) of the clustering results
 cluster_colors <- kmeans_result$centers
-# 显示提取的颜色（RGB 值）
-print("主要颜色（RGB 值）：")
+# Display the extracted colors (RGB values)
+print("main color (RGB values):")
 print(cluster_colors)
-# 获取每个像素的颜色类别
+# Obtain the color category for each pixel
 img_data$cluster <- factor(kmeans_result$cluster)
 
-# 计算每个簇的颜色出现频率
+# Calculate the frequency of color occurrences in each cluster
 color_counts <- img_data %>%
   group_by(cluster) %>%
   summarise(count = n())
 
-# 获取聚类中心的颜色（RGB）
+# Obtain the colors (RGB) of the clusters
 cluster_colors_rgb <- rgb(cluster_colors[,1], cluster_colors[,2], cluster_colors[,3], maxColorValue = 1)
 
-# 添加颜色列到 color_counts 数据框
 color_counts$color <- cluster_colors_rgb
 
-# 可视化每个颜色的出现频率
+# Visualize the frequency of occurrence for each color
 ggplot(color_counts[1:25,], aes(x = cluster, y = 1, fill = color)) +
   geom_bar(stat = "identity") +
-  scale_fill_identity() +  # 使用 RGB 颜色值填充条形
+  scale_fill_identity() +  # Fill the bars using RGB color values
   theme_void() +
-  ggtitle("Top 5 Colors in Image")  +  # 可视化图像中的前 5 种颜色
+  ggtitle("Top 5 Colors in Image")  +  
   geom_text(aes(label = color), 
-            position = position_stack(vjust = 0.5),  # 设置标签位置
-            color = "black",  # 标签字体颜色
+            position = position_stack(vjust = 0.5),  
+            color = "black",  
             size = 5,
             angle = 90
-            )  # 设置标签字体大小
+            )  
 
 
 ggplot(color_counts[26:50,], aes(x = cluster, y = 1, fill = color)) +
   geom_bar(stat = "identity") +
-  scale_fill_identity() +  # 使用 RGB 颜色值填充条形
+  scale_fill_identity() +  # Fill the bars using RGB color values
   theme_void() +
-  ggtitle("Top 5 Colors in Image")  +  # 可视化图像中的前 5 种颜色
+  ggtitle("Top 5 Colors in Image")  +  
   geom_text(aes(label = color), 
-            position = position_stack(vjust = 0.5),  # 设置标签位置
-            color = "black",  # 标签字体颜色
+            position = position_stack(vjust = 0.5),  
+            color = "black",  
             size = 5,
             angle = 90
-  )  # 设置标签字体大小
+  )  
 
-#查看每个群对应的颜色
+#check the color of each cell type
 table( mac.atlas.zenodo$short.label )
 #  0_AlvMac         1_MetM2Mac        2_C3Mac      3_ICIMac1            4_ICIMac2 
 #  #50609F          #BF493E           #769765      #E7E291              #4E6980
@@ -191,7 +190,7 @@ label.coords = adjust.label('15_LYZMac', 0, 0.3)
 label.coords = adjust.label('7_IFNMac', 0, 2)
 label.coords = adjust.label('21_HemeMac', 3.5, -1)
 
-# 加载 ggsci 包
+
 library(ggsci)
 
 clus.umap.raw = ggplot(mac.atlas.zenodo.metadata, aes(x = UMAP_1, y = UMAP_2, color = short.label)) +
@@ -224,15 +223,15 @@ clus.umap.raw = ggplot(mac.atlas.zenodo.metadata, aes(x = UMAP_1, y = UMAP_2, co
     legend.position = 'none',
     axis.title = element_text(size = 18)
   ) 
-#手动保存为1400*1400的图片
+#save as 1400*1400 picture
 
 ###################################################################
-#单独处理每一个数据集，分别对每一个数据集进行SCTtransform, 过滤策略也与与pan-cancer review保持一致
+#Process each dataset individually, perform SCTtransform on each dataset, and keep the filtering strategy consistent with the pan-cancer review.
 DefaultAssay(mac.atlas.zenodo) <- "SCT"
 VlnPlot(mac.atlas.zenodo,features = c("ZEB1","ZEB2","CXCR2","CX3CR1","CD68","CD14","ADGRE1","HLA-DRA","GAPDH","SNAI1","SNAI2","TWIST1","TWIST2","FOXC2"),group.by = "short.label",raster=FALSE, stack = TRUE, sort = FALSE, flip = TRUE)+ theme(legend.position = "none")+ggtitle("") + theme(plot.margin = unit(c(0.1,0.1,0.1,1), "inches"))
 DotPlot(mac.atlas.zenodo, idents = levels(mac.atlas.zenodo$short.label)[1:23]   ,  features = c("ZEB1","ZEB2","CXCR2","CX3CR1","CD68","CD14","ADGRE1","HLA-DRA","GAPDH","SNAI1","SNAI2","TWIST1","TWIST2","FOXC2"),group.by = "short.label" )
 
-#############把细胞分类为16_ECMHomeoMac群和Others  11-03-2025
+#############Classify the cells into the “16_ECMHomeoMac” group and “Others”.  
 mac.atlas.zenodo@meta.data$celltype2 <- "Others"
 
 length(which(mac.atlas.zenodo@meta.data$short.label == "16_ECMHomeoMac"    ))#10011
@@ -248,7 +247,7 @@ table(mac.atlas.zenodo@meta.data$celltype2, mac.atlas.zenodo@meta.data$tissue)
 #Others            252     2736      6006  74553 269757
 
 
-#仅仅包含Tumor,比较"16_ECMHomeoMac" 和"Others"
+#Include only Tumor cells and compare '16_ECMHomeoMac' with 'Others'.
 Idents(mac.atlas.zenodo) <- "tissue"
 #VlnPlot(mac.atlas.zenodo,features = c("FABP5","CD36","CD63","CD68","PLIN2","LIPA","APOE","IL1B","HSPA5","SIRPA","LPL"),group.by = "short.label",raster=FALSE, stack = TRUE, sort = FALSE, flip = TRUE)+ theme(legend.position = "none")+ggtitle("") + theme(plot.margin = unit(c(0.1,0.1,0.1,1), "inches"))
 p = VlnPlot(mac.atlas.zenodo, idents = "Tumor" , features = c("FABP5","CD36","CD68","PLIN2","LIPA","APOE","LPL","LAMP1","TREM2","ABCA1","MARCO" ),group.by = "celltype2", cols = c("#AD867E","#a47053","#7b5965","#95594c","#533068","#66597b","#50609f","#4e6980","#678171","#7bab77","#979c70") ,raster=FALSE, stack = TRUE, sort = FALSE, flip = TRUE)+ 
